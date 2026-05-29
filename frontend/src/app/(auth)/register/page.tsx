@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
 
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/AuthContext';
+import { createClient } from '@/utils/supabase/client';
 
 const PASSWORD_RULES = [
   { label: 'At least 8 characters', test: (p: string) => p.length >= 8 },
@@ -19,7 +19,7 @@ const PASSWORD_RULES = [
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const supabase = createClient();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -44,13 +44,25 @@ export default function RegisterPage() {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    // TODO: call /api/auth/register and redirect to /dashboard
-    await new Promise((r) => setTimeout(r, 1400));
-    login({
-      name: form.name,
-      businessName: form.businessName,
+    
+    const { data, error } = await supabase.auth.signUp({
       email: form.email,
+      password: form.password,
+      options: {
+        data: {
+          name: form.name,
+          businessName: form.businessName,
+        }
+      }
     });
+
+    setLoading(false);
+
+    if (error) {
+      setErrors({ email: error.message });
+      return;
+    }
+
     router.push('/dashboard');
   }
 

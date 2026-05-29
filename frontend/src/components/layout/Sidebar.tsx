@@ -33,7 +33,7 @@ interface SidebarProps {
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   return (
     <>
@@ -111,8 +111,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               <p className="text-sm font-medium text-white truncate">{user?.name || 'Alex Mercer'}</p>
               <p className="text-xs text-slate-500 truncate">{user?.businessName || 'FitLife Gym'}</p>
             </div>
-            <LogOut size={15} className="text-slate-600 group-hover:text-slate-400 transition-colors flex-shrink-0" onClick={() => {
-               logout();
+            <LogOut size={15} className="text-slate-600 group-hover:text-slate-400 transition-colors flex-shrink-0" onClick={async () => {
+               const { createClient } = await import('@/utils/supabase/client');
+               const supabase = createClient();
+               await supabase.auth.signOut();
                window.location.href = '/login';
             }} />
           </div>

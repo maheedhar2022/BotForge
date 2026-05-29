@@ -8,11 +8,11 @@ import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/AuthContext';
+import { createClient } from '@/utils/supabase/client';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const supabase = createClient();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: '', password: '' });
@@ -31,16 +31,18 @@ export default function LoginPage() {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    // TODO: call /api/auth/login and redirect to /dashboard
-    await new Promise((r) => setTimeout(r, 1200));
     
-    // Mock user for UI presentation in Phase 1
-    const mockName = form.email.split('@')[0];
-    login({
-      name: mockName.charAt(0).toUpperCase() + mockName.slice(1),
-      businessName: 'My Business',
+    const { error } = await supabase.auth.signInWithPassword({
       email: form.email,
+      password: form.password,
     });
+
+    setLoading(false);
+
+    if (error) {
+      setErrors({ email: error.message });
+      return;
+    }
     
     router.push('/dashboard');
   }
