@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Assistant</title>
+  <style>
+    :root {
+      --primary-color: #6366f1;
+      --primary-hover: #4f46e5;
+      --bg-color: #f8fafc;
+      --panel-bg: #ffffff;
+      --text-dark: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      background: var(--bg-color);
+      color: var(--text-dark);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 1. Header Styling */
+    .chat-header {
+      background: var(--primary-color);
+      color: #ffffff;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      position: relative;
+    }
+
+    .bot-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 16px;
+      margin-right: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+    }
+
+    .bot-info {
+      flex: 1;
+    }
+
+    .bot-title {
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .bot-status {
+      font-size: 11px;
+      opacity: 0.9;
+      display: flex;
+      align-items: center;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      margin-right: 5px;
+      display: inline-block;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    /* 2. Chat Log Messages Area */
+    .chat-messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #f1f5f9;
+    }
+
+    .msg-bubble {
+      max-width: 80%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      line-height: 1.4;
+      word-wrap: break-word;
+      font-size: 13.5px;
+      animation: slideIn 0.25s ease-out forwards;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg-bot {
+      background: #ffffff;
+      color: var(--text-dark);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border-color);
+    }
+
+    .msg-visitor {
+      background: var(--primary-color);
+      color: #ffffff;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    /* Typing Animation */
+    .typing-indicator {
+      display: none;
+      align-self: flex-start;
+      background: #ffffff;
+      padding: 12px 18px;
+      border-radius: 18px;
+      border-bottom-left-radius: 4px;
+      border: 1px solid var(--border-color);
+      gap: 4px;
+      align-items: center;
+    }
+
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      animation: bounce 1.4s infinite ease-in-out both;
+    }
+
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1.0); }
+    }
+
+    /* 3. Lead Collection Card */
+    .lead-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      display: none;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .lead-card-title {
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .lead-card-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .lead-field {
+      margin-bottom: 10px;
+    }
+
+    .lead-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .lead-input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      outline: none;
+      font-size: 13px;
+      transition: border-color 0.2s;
+    }
+
+    .lead-input:focus {
+      border-color: var(--primary-color);
+    }
+
+    .lead-btn {
+      width: 100%;
+      background: var(--primary-color);
+      color: #ffffff;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px;
+      margin-top: 4px;
+      transition: background 0.2s;
+    }
+
+    .lead-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .lead-success-msg {
+      font-size: 12px;
+      color: #10b981;
+      text-align: center;
+      display: none;
+      font-weight: 500;
+    }
+
+    /* 4. Footer Input Box */
+    .chat-footer {
+      background: var(--panel-bg);
+      padding: 12px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .input-box {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      outline: none;
+      font-size: 13.5px;
+      background: #f8fafc;
+      transition: border-color 0.2s, background-color 0.2s;
+    }
+
+    .input-box:focus {
+      border-color: var(--primary-color);
+      background: #ffffff;
+    }
+
+    .send-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      color: #ffffff;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .send-btn:hover {
+      background: var(--primary-hover);
+      transform: scale(1.05);
+    }
+
+    .send-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Chat Header -->
+  <div class="chat-header">
+    <div class="bot-avatar" id="botAvatar">A</div>
+    <div class="bot-info">
+      <div class="bot-title" id="botName">AI Assistant</div>
+      <div class="bot-status"><span class="status-dot"></span>Online</div>
+    </div>
+  </div>
+
+  <!-- Messages List -->
+  <div class="chat-messages" id="chatMessages">
+    <!-- Initial welcome message gets loaded here dynamically -->
+
+    <!-- Dynamic Lead Capture Card inside chat -->
+    <div class="lead-card" id="leadCard">
+      <div class="lead-card-title">Leave a Message</div>
+      <div class="lead-card-subtitle">Please share your details and our team will get back to you!</div>
+      
+      <div class="lead-field">
+        <label class="lead-label">Your Name</label>
+        <input type="text" id="leadName" class="lead-input" placeholder="John Doe">
+      </div>
+      <div class="lead-field">
+        <label class="lead-label">Email Address</label>
+        <input type="email" id="leadEmail" class="lead-input" placeholder="john@example.com">
+      </div>
+      <div class="lead-field">
+        <label class="lead-label">Phone Number</label>
+        <input type="tel" id="leadPhone" class="lead-input" placeholder="+1 (555) 000-0000">
+      </div>
+      <button class="lead-btn" id="leadSubmit">Submit Details</button>
+      <div class="lead-success-msg" id="leadSuccess">Thank you! Your info has been captured.</div>
+    </div>
+
+    <!-- Typing animation template -->
+    <div class="typing-indicator" id="typingIndicator">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>
+  </div>
+
+  <!-- Footer Input Box -->
+  <div class="chat-footer">
+    <input type="text" id="chatInput" class="input-box" placeholder="Ask a question..." autocomplete="off">
+    <button class="send-btn" id="sendBtn">
+      <svg viewBox="0 0 24 24">
+        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+      </svg>
+    </button>
+  </div>
+
+  <script>
+    // 1. Parse URL Parameters
+    const params = new URLSearchParams(window.location.search);
+    const botId = params.get('botId');
+    const visitorId = params.get('visitorId');
+    const primaryColor = params.get('themeColor') || '#6366f1';
+    const botName = params.get('botName') || 'AI Assistant';
+
+    // 2. Set Custom Color Variable Styling
+    document.documentElement.style.setProperty('--primary-color', primaryColor);
+    // basic hover tint
+    document.documentElement.style.setProperty('--primary-hover', primaryColor + 'cc');
+
+    document.getElementById('botName').innerText = botName;
+    document.getElementById('botAvatar').innerText = botName.charAt(0).toUpperCase();
+
+    const messagesContainer = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const typingIndicator = document.getElementById('typingIndicator');
+    const leadCard = document.getElementById('leadCard');
+
+    // Get current backend URL
+    const backendUrl = window.location.origin;
+
+    // 3. Load welcome message dynamically
+    fetch(`${backendUrl}/api/public/chatbot/${botId}`)
+      .then(res => res.json())
+      .then(config => {
+        appendMessage('bot', config.welcome_message || 'Hello! How can I help you today?');
+      })
+      .catch(() => {
+        appendMessage('bot', `Hi there! I am ${botName}. How can I assist you with our business today?`);
+      });
+
+    // 4. Send Message Handler
+    async function handleSend() {
+      const text = chatInput.value.trim();
+      if (!text) return;
+
+      appendMessage('visitor', text);
+      chatInput.value = '';
+
+      showTyping(true);
+
+      try {
+        const response = await fetch(`${backendUrl}/api/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            chatbotId: botId,
+            visitorId: visitorId,
+            message: text
+          })
+        });
+
+        const data = await response.json();
+        showTyping(false);
+
+        if (data.reply) {
+          appendMessage('bot', data.reply);
+          
+          // Trigger Lead Generation Card popup if bot mentions contact card or detail capture
+          if (data.reply.toLowerCase().includes('contact card') || 
+              data.reply.toLowerCase().includes('collect your name') ||
+              data.reply.toLowerCase().includes('share your contact') ||
+              data.reply.toLowerCase().includes('human specialist reach out')) {
+            showLeadCard(true);
+          }
+        } else {
+          appendMessage('bot', "I'm having trouble connecting to my knowledge base right now. Please try again soon!");
+        }
+      } catch (err) {
+        showTyping(false);
+        appendMessage('bot', "Connection error. I could not reach my service endpoint.");
+      }
+    }
+
+    sendBtn.addEventListener('click', handleSend);
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleSend();
+    });
+
+    // Append standard message bubble to log
+    function appendMessage(sender, text) {
+      const bubble = document.createElement('div');
+      bubble.className = `msg-bubble msg-${sender}`;
+      bubble.innerText = text;
+
+      // Keep before the leadCard/typingIndicator
+      messagesContainer.insertBefore(bubble, leadCard);
+      scrollToBottom();
+    }
+
+    function showTyping(show) {
+      typingIndicator.style.display = show ? 'flex' : 'none';
+      if (show) {
+        messagesContainer.appendChild(typingIndicator);
+      }
+      scrollToBottom();
+    }
+
+    function showLeadCard(show) {
+      leadCard.style.display = show ? 'block' : 'none';
+      if (show) {
+        messagesContainer.appendChild(leadCard);
+      }
+      scrollToBottom();
+    }
+
+    function scrollToBottom() {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // 5. Submit Lead Card Contact Form
+    document.getElementById('leadSubmit').addEventListener('click', async () => {
+      const name = document.getElementById('leadName').value.trim();
+      const email = document.getElementById('leadEmail').value.trim();
+      const phone = document.getElementById('leadPhone').value.trim();
+
+      if (!name && !email && !phone) {
+        alert('Please fill out at least one contact channel.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${backendUrl}/api/lead`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            chatbotId: botId,
+            name,
+            email,
+            phone,
+            message: 'Collected during conversation flow.'
+          })
+        });
+
+        if (res.ok) {
+          document.getElementById('leadSubmit').style.display = 'none';
+          document.getElementById('leadSuccess').style.display = 'block';
+          
+          setTimeout(() => {
+            showLeadCard(false);
+          }, 3000);
+        } else {
+          alert('Failed to submit contact information.');
+        }
+      } catch (err) {
+        alert('Connection error while saving contact lead.');
+      }
+    });
+
+  </script>
+</body>
+</html>
